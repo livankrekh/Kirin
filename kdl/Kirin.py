@@ -23,7 +23,7 @@ class Loss(IntEnum):
     BinaryCrossEntropy = 1
     MulticlassCrossEntropy = 2
 
-class Optimizator(IntEnum):
+class GradientOptimizer(IntEnum):
     SGD = 0
     MiniBatch = 1
     Momentum = 2
@@ -38,9 +38,10 @@ class Model:
         PolicyProbability = 1
         Action = 2
         FeatureSpace = 3
-        Undefined = 4
+        Regression = 4
+        Undefined = 5
 
-    def __init__(self, input_size, n_neurons=[], activtions=[], optimizator=Optimizator.Adam, learning_rate=10**-5, random_state=None):
+    def __init__(self, input_size, n_neurons=[], activtions=[], optimizator=None, learning_rate=10**-5, random_state=None):
         if random_state != None:
             np.random.seed(random_state)
 
@@ -50,6 +51,7 @@ class Model:
         self.layers_size = [self.input_size] + n_neurons
         self.activation_pipeline = activtions
         self.last_layer = self.Target.ClassProbability
+        self.optimizator = optimizator
 
         self.activations = [self._linear,
                             self._sigmoid,
@@ -105,7 +107,7 @@ class Model:
         
         return result.astype(np.float64)
 
-    def _softmax(self, x):
+    def _softmax(self, X):
         x_ = X.astype(np.float128)
         e_x = np.exp(x_ - np.max(x_))
         result = e_x / e_x.sum(axis=0)
@@ -240,7 +242,7 @@ class Model:
         loss_grad = np.nan_to_num(self._log_likelihood_derivative(probs, total_rewards))
         policy_grad = np.nan_to_num(probs * self._gaussian_dist_prob_derivative(actions, mean, std))
 
-        return loss_grad * policy_grad
+        return np.repeat(loss_grad * policy_grad, 2, axis=1)
 
 #                                     Model management
 #___________________________________________________________________________________________-
@@ -294,8 +296,10 @@ class Model:
 
     def init_nn(self):
         self.pipeline = [self.activations[act] for act in self.activation_pipeline]
-        self.loss = self.losses[self.loss_type]
-        self.loss_grad = self.losses_derivatives[self.loss_type]
+
+        if self.loss_type != None:
+            self.loss = self.losses[self.loss_type]
+            self.loss_grad = self.losses_derivatives[self.loss_type]
 
         for i in range(len(self.layers_size) - 1):
             input_size = self.layers_size[i]
@@ -306,6 +310,8 @@ class Model:
 
     def prop(self, X, save_history=False):
         result = np.copy(X)
+
+        self.prop_history.append(np.copy(X))
 
         for layer, bias, activation in zip(self.nn, self.bias, self.pipeline):
             result = activation(np.dot(result, layer) + bias)
@@ -322,22 +328,48 @@ class Model:
         return resized[:, :, 0], resized[:, :, 1]
 
     def _to_jacobian(self, matrix, shape):
-        pass
+        m_dim = matrix.shape[-1]
+        h, w = shape
+
+        new_shape = ((-1,) + shape)
+
+        if m_dim == h:
+            return np.vstack([matrix] * w).reshape(new_shape)
+        if m_dim == w:
+            return np.hstack([matrix] * h).reshape(new_shape)
+
+        return matrix
 
     def _autograds_prob_policy(self, actions, rewards):
         mean, std = self._output_to_mean(self.prop_history[-1])
+        nn_grad = []
+        bias_grad = []
+        self.grad_history = []
 
         if self.loss_grad == None:
-            grad_ = np.ones((1, nn.layers_size[-1]))
+            grad_ = np.ones((1, self.layers_size[-1]))
         else:
             grad_ = self.loss_grad(mean, std, actions, rewards)
-            nn.grad_history.append(np.copy(grad_))
+            self.grad_history.append(np.copy(grad_))
 
-        for history_i in reversed(range(len(nn.prop_history)-1)):
-            x = nn.prop_history[history_i]
-            x_ = np.vstack([x] * curr_size).T
+        for history_i in reversed(range(len(self.prop_history)-1)):
+            curr_weights = self.nn[history_i]
+            curr_bias = self.bias[history_i]
+            curr_shape = curr_weights.shape
 
-        return loss_
+            x = self.prop_history[history_i]
+            x_ = self._to_jacobian(x, shape=curr_shape)
+            out = np.dot(x, curr_weights) + curr_bias
+            out_ = self._to_jacobian(out, shape=curr_shape)
+            grad_ = self._to_jacobian(grad_, shape=curr_shape)
+
+            grad_ = np.sum(x_ * out_ * grad_, axis=0)
+
+            nn_grad.append(np.copy(grad_))
+
+            grad_ = np.sum(grad_, axis=1)
+
+        return np.array(nn_grad), np.array(bias_grad)
 
     def predict(self, X):
         if self.last_layer == self.Target.PolicyProbability:
