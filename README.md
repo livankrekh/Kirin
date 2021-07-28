@@ -35,8 +35,11 @@ Keras-style deep learning framework for reinforcement learning. This framework d
 The main class of the framework is `Model`:
 ```python
 Model(input_size,           # - (required) int, state dimensionality
-      n_neurons=[],         # - iterable struct of int, lenth of list - number of layers, element - number of neurons in layer
-      activtions=[],        # - iterable of Activations, must be the same lenth as n_neurons
+      n_neurons=[],         # - iterable struct of int,
+      			    #   lenth of list - number of layers,
+      			    #   element - number of neurons in layer
+      activtions=[],        # - iterable of Activations,
+      			    #   must be the same lenth as n_neurons
       optimizator=None,     # - GradientOptimizer, optimizer of the model
       learning_rate=10**-5, # - float, learning rate
       random_state=None     # - int, random state
@@ -47,7 +50,8 @@ To add new fully-connected layer in your model use next function:
 
 ```python
 Model.add_FC(n_neurons,   # - (required) int, number of neurons
-             activation   # - (required) Activation, activation function of the layer
+             activation   # - (required) Activation,
+	     		  #   activation function of the layer
              )
 ```
 
@@ -62,18 +66,22 @@ To make your model learning a Policy Gradient use this:
 
 ```python
 Model.add_ProbPolicyGradient(n_actions, # - (required) int, shape (number) of actions
-                             activation # - (required) Actiovation, activation function for the mean of the model
+                             activation # - (required) Actiovation,
+			     		#   activation function for the mean of the model
                              )
 ```
 
 Train and predict functions:
 
 ```python
-Model.train(X, # (required) numpy.array, input data (if classification) or current environment and agent state (if Gradient Policy)
-            y  # (required) numpy.array, labels (if classification) or rewards (if Gradient Policy)
+Model.train(X, # (required) numpy.array, input data (if classification)
+	       # or current environment and agent state (if Gradient Policy)
+            y  # (required) numpy.array, labels (if classification)
+	       # or rewards (if Gradient Policy)
 	    ) 
 
-Model.predict(X # (required) numpy.array, input data (if classification) or current environment and agent state (if Gradient Policy)
+Model.predict(X # (required) numpy.array, input data (if classification)
+		# or current environment and agent state (if Gradient Policy)
 	      )
 
 ```
