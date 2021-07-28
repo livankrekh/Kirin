@@ -74,14 +74,14 @@ Model.add_ProbPolicyGradient(n_actions, # - (required) int, shape (number) of ac
 Train and predict functions:
 
 ```python
-Model.train(X, # (required) numpy.array, input data (if classification)
-	       # or current environment and agent state (if Gradient Policy)
-            y  # (required) numpy.array, labels (if classification)
-	       # or rewards (if Gradient Policy)
+Model.train(X, # - (required) numpy.array, input data (if classification)
+	       #   or current environment and agent state (if Gradient Policy)
+            y  # - (required) numpy.array, labels (if classification)
+	       #   or rewards (if Gradient Policy)
 	    ) 
 
-Model.predict(X # (required) numpy.array, input data (if classification)
-		# or current environment and agent state (if Gradient Policy)
+Model.predict(X # - (required) numpy.array, input data (if classification)
+		#   or current environment and agent state (if Gradient Policy)
 	      )
 
 ```
