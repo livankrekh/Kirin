@@ -5,7 +5,7 @@ import random
 from scipy import stats
 from multiprocessing import Pool
 
-from tools.tree_tools import Node, Rule, _parallelize
+from .tree_tools import Node, Rule, _parallelize
 
 class DecisionTree:
 	def __init__(self, max_depth=100):
