@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from kdl.Kirin import Model, Activation, Loss, GradientOptimizer
+from Kirin import Model, Activation, Loss, GradientOptimizer
 
 if __name__ == "__main__":
 	nn = Model(input_size=24, random_state=12732)
